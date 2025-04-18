@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+// ... (keep the same imports)
 
 class HistoryPage extends StatefulWidget {
   @override
@@ -35,7 +36,6 @@ class _HistoryPageState extends State<HistoryPage> {
       );
 
       if (response.statusCode == 200) {
-        // Ensure the response body is interpreted as UTF-8
         final utf8DecodedBody = utf8.decode(response.bodyBytes);
         final decodedData = jsonDecode(utf8DecodedBody);
 
@@ -57,36 +57,40 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFF3EFFA),
       body: Column(
         children: [
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Color.fromARGB(255, 218, 175, 249),
+              color: Color.fromARGB(
+                  255, 218, 175, 249), // Solid color instead of gradient
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(50),
-                bottomRight: Radius.circular(50),
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
               ),
             ),
             child: Stack(
               children: [
                 Positioned(
-                  top: 20,
+                  top: 25,
                   left: 16,
                   child: IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    icon: Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
                 Center(
-                  child: Text(
-                    'Үйлчилгээний түүх',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 15),
+                    child: Text(
+                      'Үйлчилгээний түүх',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                   ),
                 ),
@@ -96,70 +100,136 @@ class _HistoryPageState extends State<HistoryPage> {
           Expanded(
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
-                : Padding(
-                    padding: EdgeInsets.all(12.0),
-                    child: historyData.isEmpty
-                        ? Center(
-                            child: Text(
-                              'Үйлчилгээний түүх байхгүй байна.',
-                              style:
-                                  TextStyle(fontSize: 18, color: Colors.grey),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: historyData.length,
-                            itemBuilder: (context, index) {
-                              var appointment = historyData[index];
-                              return Card(
-                                elevation: 4,
-                                margin: EdgeInsets.symmetric(vertical: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: ListTile(
-                                  leading: Icon(
-                                    appointment['Төлөв'] == 'Дууссан'
-                                        ? Icons.check_circle
-                                        : Icons.cancel,
-                                    color: appointment['Төлөв'] == 'Дууссан'
-                                        ? Colors.green
-                                        : Colors.red,
+                : historyData.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Үйлчилгээний түүх байхгүй байна.',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: ListView.builder(
+                          itemCount: historyData.length,
+                          itemBuilder: (context, index) {
+                            var appointment = historyData[index];
+                            bool isDone = appointment['status'] == 'Дууссан';
+
+                            return AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              margin: EdgeInsets.symmetric(vertical: 10),
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.85),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 5),
                                   ),
-                                  title: Text(
-                                    appointment['service_name'] ?? "No Title",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      SizedBox(height: 4),
-                                      Text("📅 Огноо: ${appointment['date']}"),
-                                      Text("🕒 Цаг: ${appointment['time']}"),
-                                      Text(
-                                          "👩‍🎨 Артист: ${appointment['worker_name']}"),
-                                      Text(
-                                        appointment['status'] == 'Дууссан'
-                                            ? "✅ Төлөв: Дууссан"
-                                            : "🕓 Төлөв: Хүлээгдэж байна",
-                                        style: TextStyle(
-                                          color:
-                                              appointment['status'] == 'Дууссан'
-                                                  ? Colors.green
-                                                  : Colors.red,
+                                      Container(
+                                        padding: EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isDone
+                                              ? Colors.green.withOpacity(0.2)
+                                              : Colors.orange.withOpacity(0.2),
+                                        ),
+                                        child: Icon(
+                                          isDone ? Icons.check : Icons.schedule,
+                                          color: isDone
+                                              ? Colors.green
+                                              : Colors.orange,
                                         ),
                                       ),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          appointment['service_name'] ??
+                                              "No Title",
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF6E48AA),
+                                          ),
+                                        ),
+                                      ),
+                                      Icon(Icons.arrow_forward_ios,
+                                          size: 14, color: Colors.grey),
                                     ],
                                   ),
-                                  trailing:
-                                      Icon(Icons.arrow_forward_ios, size: 16),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
+                                  SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 10,
+                                    runSpacing: 6,
+                                    children: [
+                                      _infoChip(Icons.calendar_today,
+                                          "Огноо: ${appointment['date']}"),
+                                      _infoChip(Icons.access_time,
+                                          "Цаг: ${appointment['time']}"),
+                                      _infoChip(Icons.location_city,
+                                          "Салбар: ${appointment['branch_name']}"),
+                                      _infoChip(Icons.person,
+                                          "Артист: ${appointment['worker_name']}"),
+                                    ],
+                                  ),
+                                  SizedBox(height: 12),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 6, horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: isDone
+                                          ? Colors.green[100]
+                                          : Colors.orange[100],
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Text(
+                                      isDone
+                                          ? "✅ Төлөв: Дууссан"
+                                          : "🕓 Төлөв: Хүлээгдэж байна",
+                                      style: TextStyle(
+                                        color: isDone
+                                            ? Colors.green[800]
+                                            : Colors.orange[800],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(IconData icon, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Color(0xFFF3EFFA),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
+          SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(color: Colors.black87),
           ),
         ],
       ),

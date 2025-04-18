@@ -36,6 +36,6 @@ class CalendarEventSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj):
         from django.utils import timezone
-        return "Completed" if obj.end_time < timezone.now() else "Upcoming"
+        return "Дууссан" if obj.end_time < timezone.now() else "Хүлээгдэж байна"
 
 
