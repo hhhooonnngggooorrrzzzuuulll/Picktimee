@@ -793,19 +793,24 @@ def create_event(request):
 @api_view(['GET'])
 def list_events(request):
     # Retrieve query parameters
-    worker_id = request.query_params.get('worker') 
-    branch = request.query_params.get('branch')  
+    worker_id = request.query_params.get('worker')
+    branch = request.query_params.get('branch')
+    customer_id = request.query_params.get('customer')  # <--- New
 
     # Filter events
     events = CalendarEvent.objects.all()
+    
     if worker_id:
         events = events.filter(worker_id=worker_id)
     if branch:
         events = events.filter(branch=branch)
+    if customer_id:
+        events = events.filter(customer_id=customer_id)  # <--- New
 
     # Serialize and return response
     serializer = CalendarEventSerializer(events, many=True)
-    return Response(serializer.data)
+    return Response(serializer.data, content_type="application/json; charset=utf-8")
+
 
 
 # Get Event by ID
