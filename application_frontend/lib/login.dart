@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:application_frontend/bottom_bar.dart'; // Ensure this is imported
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -30,6 +31,8 @@ class _LoginPageState extends State<LoginPage> {
         }),
       );
 
+      log(response.body.toString());
+
       // Debug: Print the response body to check the response format
       // print('Response Body: ${response.body}');
 
@@ -44,6 +47,8 @@ class _LoginPageState extends State<LoginPage> {
                 data['access']; // The access token returned from the backend
             String refreshToken =
                 data['refresh']; // The refresh token returned from the backend
+            String user = jsonEncode(
+                data['user']); // The refresh token returned from the backend
 
             // print("Access Token: $accessToken");
             // print("Refresh Token: $refreshToken");
@@ -52,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
             SharedPreferences prefs = await SharedPreferences.getInstance();
             prefs.setString('access_token', accessToken);
             prefs.setString('refresh_token', refreshToken);
+            prefs.setString('user', user);
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

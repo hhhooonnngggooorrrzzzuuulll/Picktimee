@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:application_frontend/bottom_bar.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -14,8 +16,12 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final FlutterSecureStorage storage = FlutterSecureStorage();
+
   String userName = '';
   String userEmail = '';
+  dynamic user;
+  bool isLoading = true;
+  String userString = "";
 
   @override
   void initState() {
@@ -24,38 +30,45 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserInfo() async {
+    isLoading = true;
+    setStates();
     try {
-      String? name = await storage.read(key: 'user_name');
-      String? email = await storage.read(key: 'user_email');
+      // String? name = await storage.read(key: 'user_name');
+      // String? email = await storage.read(key: 'user_email');
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      userString = prefs.getString('user') ?? "{}";
+      user = jsonDecode(userString);
+      setStates();
 
-      if (name != null && email != null) {
-        setState(() {
-          userName = name;
-          userEmail = email;
-        });
+      if (userString != "") {
+        log("test");
+        setStates();
       } else {
-        String? accessToken = await storage.read(key: 'access_token');
-        if (accessToken != null) {
-          final response = await http.get(
-            Uri.parse('http://127.0.0.1:8000/profile/'),
-            headers: {'Authorization': 'Bearer $accessToken'},
-          );
+        // String? accessToken = await storage.read(key: 'access_token');
+        // if (accessToken != null) {
+        //   final response = await http.get(
+        //     Uri.parse('http://127.0.0.1:8000/profile/'),
+        //     headers: {'Authorization': 'Bearer $accessToken'},
+        //   );
 
-          if (response.statusCode == 200) {
-            final data = json.decode(response.body);
-            setState(() {
-              userName = data['name'] ?? 'Unknown';
-              userEmail = data['email'] ?? 'Unknown';
-            });
+        //   if (response.statusCode == 200) {
+        //     final data = json.decode(response.body);
 
-            await storage.write(key: 'user_name', value: userName);
-            await storage.write(key: 'user_email', value: userEmail);
-          }
-        }
+        //     userName = data['name'] ?? 'Unknown';
+        //     userEmail = data['email'] ?? 'Unknown';
+        //     setStates();
+        //     await storage.write(key: 'user_name', value: userName);
+        //     await storage.write(key: 'user_email', value: userEmail);
+        //   }
+        // }
+        // log("test2");
       }
     } catch (e) {
       print('Error loading user info: $e');
     }
+    isLoading = false;
+    log("test3");
+    setStates();
   }
 
   Future<void> logout(BuildContext context) async {
@@ -75,6 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (response.statusCode == 200) {
         await prefs.remove('access_token');
         await prefs.remove('refresh_token');
+        await prefs.remove('user');
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -113,6 +127,12 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  setStates() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -142,21 +162,26 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   SizedBox(height: 16),
-                  Text(
-                    userName.isNotEmpty ? userName : 'Loading...',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    userEmail.isNotEmpty ? userEmail : '',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
+                  isLoading
+                      ? CupertinoActivityIndicator()
+                      : Text(
+                          userString == "" ? 'Loading...' : user["name"],
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                  isLoading
+                      ? CupertinoActivityIndicator()
+                      : Text(
+                          userString == "" ? 'Loading...' : user["email"],
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                 ],
               ),
             ),
