@@ -31,7 +31,7 @@ class HistoryPage extends StatelessWidget {
       body: Column(
         children: [
           Container(
-            height: 150,
+            height: 80,
             decoration: BoxDecoration(
               color: Color.fromARGB(255, 218, 175, 249),
               borderRadius: BorderRadius.only(
@@ -39,15 +39,29 @@ class HistoryPage extends StatelessWidget {
                 bottomRight: Radius.circular(50),
               ),
             ),
-            child: Center(
-              child: Text(
-                'Үйлчилгээний түүх',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 20,
+                  left: 16,
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
                 ),
-              ),
+                Center(
+                  child: Text(
+                    'Үйлчилгээний түүх',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(

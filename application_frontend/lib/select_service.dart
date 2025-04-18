@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bottom_bar.dart'; // <-- Replace this with the actual path
 
 class SelectServicePage extends StatefulWidget {
   @override
@@ -343,7 +344,13 @@ class _SelectServicePageState extends State<SelectServicePage> {
 
         if (response.statusCode == 201) {
           _showDialog("Амжилттай",
-              "Таны захиалга амжилттай! ID: ${responseData['event_id']}");
+              "Таны захиалга амжилттай! ID: ${responseData['event_id']}", () {
+            Navigator.pop(context); // close dialog
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => MyHomePage()),
+            );
+          });
         } else {
           _showDialog("Алдаа", responseData["error"] ?? "Алдаа гарлаа.");
         }
@@ -357,7 +364,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
     }
   }
 
-  void _showDialog(String title, String message) {
+  void _showDialog(String title, String message, [VoidCallback? onOkPressed]) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -365,7 +372,12 @@ class _SelectServicePageState extends State<SelectServicePage> {
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              if (onOkPressed != null) {
+                onOkPressed();
+              }
+            },
             child: Text("OK"),
           ),
         ],
