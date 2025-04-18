@@ -37,7 +37,6 @@ urlpatterns = [
     path('register/', register_customer, name='register_customer'),
     path('login/', login_customer, name='login_customer'),
     path('logout/', logout_customer, name='logout_customer'),
-    path('profile/', customer_profile, name='user-profile'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     # path('service_search/', service_search, name='service_search'),

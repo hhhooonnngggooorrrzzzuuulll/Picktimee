@@ -852,7 +852,7 @@ from django.utils import timezone
 from .models import *
 
 @csrf_exempt
-@permission_classes([IsAuthenticated])
+@api_view(["GET", "POST"])
 def book_service(request):
     if request.method == "GET":
         branches = list(Branch.objects.values("branch_id", "bname"))
@@ -867,12 +867,9 @@ def book_service(request):
 
     elif request.method == "POST":
         try:
-            # Extract customer from the authenticated user
-            user = request.user  # This will be the authenticated user
-            customer_id = user.customer_id  # Assuming the user model has customer_id field
-
-            data = request.data
+            data = json.loads(request.body)
             service_id = data.get("service_id")
+            customer_id = data.get("customer_id")
             worker_id = data.get("worker_id")
             branch_id = data.get("branch_id")
             date_str = data.get("date")
@@ -911,6 +908,7 @@ def book_service(request):
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
+
 @csrf_exempt
 def get_weekly_bookings(request, worker_id):
     start_of_week = timezone.now().date() - timedelta(days=timezone.now().weekday())
@@ -939,25 +937,6 @@ def get_monthly_bookings(request, worker_id):
 
 ####################################################################################################################################################
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def customer_profile(request):
-    try:
-        customer = request.user  # Already is Customer
-        print("User:", customer)
-        print("Is authenticated:", customer.is_authenticated)
-
-        data = {
-            'customer_id': customer.customer_id,
-            'name': customer.cname,         # ✅ correct field
-            'email': customer.cemail,       # ✅ correct field
-            'phone': customer.cphone,
-            'image_url': request.build_absolute_uri(customer.cimage.url) if customer.cimage else None,
-            'blacklist': customer.blacklist,
-        }
-        return Response(data)
-    except Exception as e:
-        return Response({'error': str(e)}, status=400)
 
 
 

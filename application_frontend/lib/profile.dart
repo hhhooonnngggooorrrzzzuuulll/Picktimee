@@ -17,8 +17,6 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final FlutterSecureStorage storage = FlutterSecureStorage();
 
-  String userName = '';
-  String userEmail = '';
   dynamic user;
   bool isLoading = true;
   String userString = "";
@@ -33,8 +31,6 @@ class _ProfilePageState extends State<ProfilePage> {
     isLoading = true;
     setStates();
     try {
-      // String? name = await storage.read(key: 'user_name');
-      // String? email = await storage.read(key: 'user_email');
       SharedPreferences prefs = await SharedPreferences.getInstance();
       userString = prefs.getString('user') ?? "{}";
       user = jsonDecode(userString);
@@ -43,26 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (userString != "") {
         log("test");
         setStates();
-      } else {
-        // String? accessToken = await storage.read(key: 'access_token');
-        // if (accessToken != null) {
-        //   final response = await http.get(
-        //     Uri.parse('http://127.0.0.1:8000/profile/'),
-        //     headers: {'Authorization': 'Bearer $accessToken'},
-        //   );
-
-        //   if (response.statusCode == 200) {
-        //     final data = json.decode(response.body);
-
-        //     userName = data['name'] ?? 'Unknown';
-        //     userEmail = data['email'] ?? 'Unknown';
-        //     setStates();
-        //     await storage.write(key: 'user_name', value: userName);
-        //     await storage.write(key: 'user_email', value: userEmail);
-        //   }
-        // }
-        // log("test2");
-      }
+      } else {}
     } catch (e) {
       print('Error loading user info: $e');
     }
@@ -177,9 +154,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       : Text(
                           userString == "" ? 'Loading...' : user["email"],
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            // fontStyle: FontStyle.italic,
+                            color: Color(0xFF872BC0),
                           ),
                         ),
                 ],

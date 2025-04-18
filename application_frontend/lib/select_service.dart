@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -20,13 +21,29 @@ class _SelectServicePageState extends State<SelectServicePage> {
   List<Map<String, dynamic>> workers = [];
   List<Map<String, dynamic>> services = [];
 
+  dynamic user;
   bool isLoading = true;
-  String? accessToken; // Define the access token variable
+  String userString = "";
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     fetchData();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      userString = prefs.getString('user') ?? "{}";
+      user = jsonDecode(userString);
+
+      log("User loaded: $user");
+
+      setState(() {});
+    } catch (e) {
+      print('Error loading user info: $e');
+    }
   }
 
   Future<void> fetchData() async {
@@ -108,9 +125,8 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       DropdownButtonFormField<String>(
                         decoration: _inputDecoration("Салбар сонгох"),
                         value: selectedBranch,
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 98, 24, 158),
-                        ),
+                        style:
+                            TextStyle(color: Color.fromARGB(255, 98, 24, 158)),
                         dropdownColor: Colors.white,
                         items: branches
                             .map((branch) => DropdownMenuItem(
@@ -130,9 +146,8 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       DropdownButtonFormField<String>(
                         decoration: _inputDecoration("Ажилтан сонгох"),
                         value: selectedWorker,
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 98, 24, 158),
-                        ),
+                        style:
+                            TextStyle(color: Color.fromARGB(255, 98, 24, 158)),
                         dropdownColor: Colors.white,
                         items: workers
                             .map((worker) => DropdownMenuItem(
@@ -152,9 +167,8 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       DropdownButtonFormField<String>(
                         decoration: _inputDecoration("Үйлчилгээ сонгох"),
                         value: selectedService,
-                        style: TextStyle(
-                          color: Color.fromARGB(255, 98, 24, 158),
-                        ),
+                        style:
+                            TextStyle(color: Color.fromARGB(255, 98, 24, 158)),
                         dropdownColor: Colors.white,
                         items: services
                             .map((service) => DropdownMenuItem(
@@ -300,26 +314,16 @@ class _SelectServicePageState extends State<SelectServicePage> {
       String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate!);
       String formattedTime = selectedTime!.format(context);
 
-      // Retrieve the JWT token and customer ID from SharedPreferences (or other storage)
-      final prefs = await SharedPreferences.getInstance();
-      String? accessToken =
-          prefs.getString('accessToken'); // Save the token after login
-      String? customer_id =
-          prefs.getString('customer_id'); // Retrieve the customer_id
-
-      if (accessToken == null || customer_id == null) {
+      if (user == null || user["id"] == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("User is not authenticated")),
+          SnackBar(content: Text("Нэвтрэх шаардлагатай.")),
         );
         return;
       }
 
-      print('Access Token: $accessToken');
-      print('Customer ID: $customer_id');
-
       Map<String, dynamic> bookingData = {
         "service_id": int.parse(selectedService!),
-        "customer_id": int.parse(customer_id), // Use customerId
+        "customer_id": user["id"],
         "worker_id": int.parse(selectedWorker!),
         "branch_id": int.parse(selectedBranch!),
         "date": formattedDate,
@@ -331,8 +335,6 @@ class _SelectServicePageState extends State<SelectServicePage> {
           Uri.parse("http://127.0.0.1:8000/book/"),
           headers: {
             "Content-Type": "application/json",
-            "Authorization":
-                "Bearer $accessToken", // Make sure `accessToken` is correctly defined
           },
           body: jsonEncode(bookingData),
         );
