@@ -143,27 +143,6 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 15),
 
-                      // Ажилтан сонгох
-                      DropdownButtonFormField<String>(
-                        decoration: _inputDecoration("Ажилтан сонгох"),
-                        value: selectedWorker,
-                        style:
-                            TextStyle(color: Color.fromARGB(255, 98, 24, 158)),
-                        dropdownColor: Colors.white,
-                        items: workers
-                            .map((worker) => DropdownMenuItem(
-                                  value: worker["id"].toString(),
-                                  child: Text(worker["name"]),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedWorker = value;
-                          });
-                        },
-                      ),
-                      SizedBox(height: 15),
-
                       // Үйлчилгээ сонгох
                       DropdownButtonFormField<String>(
                         decoration: _inputDecoration("Үйлчилгээ сонгох"),
@@ -183,6 +162,48 @@ class _SelectServicePageState extends State<SelectServicePage> {
                           });
                         },
                       ),
+                      SizedBox(height: 25),
+
+                      // Ажилтан сонгох
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Ажилтан сонгох",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromARGB(
+                                  255, 98, 24, 158), // Fixed color property
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: workers.map<Widget>((worker) {
+                              final isSelected =
+                                  selectedWorker == worker["id"].toString();
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSelected
+                                      ? Color.fromARGB(255, 98, 24, 158)
+                                      : Colors.grey[200],
+                                  foregroundColor:
+                                      isSelected ? Colors.white : Colors.black,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedWorker = worker["id"].toString();
+                                  });
+                                },
+                                child: Text(worker["name"]),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+
                       SizedBox(height: 15),
 
                       // Огноо сонгох
