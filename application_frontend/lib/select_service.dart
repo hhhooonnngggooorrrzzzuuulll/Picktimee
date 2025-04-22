@@ -364,8 +364,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
         final responseData = jsonDecode(response.body);
 
         if (response.statusCode == 201) {
-          _showDialog("Амжилттай",
-              "Таны захиалга амжилттай! ID: ${responseData['event_id']}", () {
+          _showDialog("Амжилттай", "Таны захиалга амжилттай!", () {
             Navigator.pop(context); // close dialog
             Navigator.pushReplacement(
               context,

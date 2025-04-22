@@ -134,8 +134,10 @@ CORS_ALLOWED_ORIGINS = [
 LANGUAGE_CODE = 'en-us'
 USE_I18N = True
 
-TIME_ZONE = 'Asia/Ulaanbaatar'  # Set to your desired timezone
+# settings.py
 USE_TZ = True
+TIME_ZONE = 'Asia/Ulaanbaatar'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/

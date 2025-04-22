@@ -913,11 +913,19 @@ def book_service(request):
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
+from django.utils.timezone import make_aware
+from datetime import datetime, timedelta
+import pytz
+timezone.now()
+
 
 @csrf_exempt
 def get_weekly_bookings(request, worker_id):
-    start_of_week = timezone.now().date() - timedelta(days=timezone.now().weekday())
-    end_of_week = start_of_week + timedelta(days=6)
+    ulaanbaatar = pytz.timezone("Asia/Ulaanbaatar")
+    today = datetime.now(ulaanbaatar).date()
+
+    start_of_week = today - timedelta(days=today.weekday())  # Monday
+    end_of_week = start_of_week + timedelta(days=6)  # Sunday
 
     bookings = CalendarEvent.objects.filter(
         worker_id=worker_id,
@@ -927,10 +935,16 @@ def get_weekly_bookings(request, worker_id):
 
     return JsonResponse({"weekly_bookings": list(bookings.values())}, safe=False)
 
+
 @csrf_exempt
 def get_monthly_bookings(request, worker_id):
-    start_of_month = timezone.now().replace(day=1)
-    end_of_month = start_of_month + timedelta(days=30)
+    ulaanbaatar = pytz.timezone("Asia/Ulaanbaatar")
+    today = datetime.now(ulaanbaatar)
+
+    start_of_month = today.replace(day=1).date()
+    # to get last day of month accurately:
+    next_month = today.replace(day=28) + timedelta(days=4)
+    end_of_month = (next_month - timedelta(days=next_month.day)).date()
 
     bookings = CalendarEvent.objects.filter(
         worker_id=worker_id,
@@ -939,6 +953,7 @@ def get_monthly_bookings(request, worker_id):
     ).order_by("start_time")
 
     return JsonResponse({"monthly_bookings": list(bookings.values())}, safe=False)
+
 
 ####################################################################################################################################################
 

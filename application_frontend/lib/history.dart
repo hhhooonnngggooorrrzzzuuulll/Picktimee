@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-// ... (keep the same imports)
+import 'cancel.dart';
 
 class HistoryPage extends StatefulWidget {
   @override
@@ -30,6 +30,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _fetchHistory(int userId) async {
+    setState(() => isLoading = true);
     try {
       final response = await http.get(
         Uri.parse('http://127.0.0.1:8000/calendar-events/?customer=$userId'),
@@ -39,6 +40,15 @@ class _HistoryPageState extends State<HistoryPage> {
         final utf8DecodedBody = utf8.decode(response.bodyBytes);
         final decodedData = jsonDecode(utf8DecodedBody);
 
+        // Sort by datetime descending (most recent first)
+        decodedData.sort((a, b) {
+          DateTime dateTimeA =
+              DateTime.tryParse('${a['date']} ${a['time']}') ?? DateTime(2000);
+          DateTime dateTimeB =
+              DateTime.tryParse('${b['date']} ${b['time']}') ?? DateTime(2000);
+          return dateTimeB.compareTo(dateTimeA);
+        });
+
         setState(() {
           historyData = decodedData;
           isLoading = false;
@@ -47,10 +57,10 @@ class _HistoryPageState extends State<HistoryPage> {
         throw Exception("Failed to load data");
       }
     } catch (e) {
-      print("Error: $e");
-      setState(() {
-        isLoading = false;
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Алдаа гарлаа: $e")),
+      );
+      setState(() => isLoading = false);
     }
   }
 
@@ -63,8 +73,7 @@ class _HistoryPageState extends State<HistoryPage> {
           Container(
             height: 80,
             decoration: BoxDecoration(
-              color: Color.fromARGB(
-                  255, 218, 175, 249), // Solid color instead of gradient
+              color: Color.fromARGB(255, 218, 175, 249),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(40),
                 bottomRight: Radius.circular(40),
@@ -107,103 +116,122 @@ class _HistoryPageState extends State<HistoryPage> {
                           style: TextStyle(fontSize: 18, color: Colors.grey),
                         ),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.all(16.0),
+                    : RefreshIndicator(
+                        onRefresh: () => _fetchHistory(user["id"]),
                         child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
                           itemCount: historyData.length,
                           itemBuilder: (context, index) {
                             var appointment = historyData[index];
-                            bool isDone = appointment['status'] == 'Дууссан';
+                            bool isDone =
+                                (appointment['status'] ?? '') == 'Дууссан';
 
-                            return AnimatedContainer(
-                              duration: Duration(milliseconds: 300),
-                              margin: EdgeInsets.symmetric(vertical: 10),
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.85),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 5),
+                            return GestureDetector(
+                              onTap: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CancelPage(appointment: appointment),
                                   ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isDone
-                                              ? Colors.green.withOpacity(0.2)
-                                              : Colors.orange.withOpacity(0.2),
-                                        ),
-                                        child: Icon(
-                                          isDone ? Icons.check : Icons.schedule,
-                                          color: isDone
-                                              ? Colors.green
-                                              : Colors.orange,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          appointment['service_name'] ??
-                                              "No Title",
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF6E48AA),
+                                );
+                                if (result == true) {
+                                  _fetchHistory(user["id"]);
+                                }
+                              },
+                              child: AnimatedContainer(
+                                duration: Duration(milliseconds: 300),
+                                margin: EdgeInsets.symmetric(vertical: 10),
+                                padding: EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.85),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isDone
+                                                ? Colors.green.withOpacity(0.2)
+                                                : Colors.orange
+                                                    .withOpacity(0.2),
+                                          ),
+                                          child: Icon(
+                                            isDone
+                                                ? Icons.check
+                                                : Icons.schedule,
+                                            color: isDone
+                                                ? Colors.green
+                                                : Colors.orange,
                                           ),
                                         ),
-                                      ),
-                                      Icon(Icons.arrow_forward_ios,
-                                          size: 14, color: Colors.grey),
-                                    ],
-                                  ),
-                                  SizedBox(height: 12),
-                                  Wrap(
-                                    spacing: 10,
-                                    runSpacing: 6,
-                                    children: [
-                                      _infoChip(Icons.calendar_today,
-                                          "Огноо: ${appointment['date']}"),
-                                      _infoChip(Icons.access_time,
-                                          "Цаг: ${appointment['time']}"),
-                                      _infoChip(Icons.location_city,
-                                          "Салбар: ${appointment['branch_name']}"),
-                                      _infoChip(Icons.person,
-                                          "Артист: ${appointment['worker_name']}"),
-                                    ],
-                                  ),
-                                  SizedBox(height: 12),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: 6, horizontal: 12),
-                                    decoration: BoxDecoration(
-                                      color: isDone
-                                          ? Colors.green[100]
-                                          : Colors.orange[100],
-                                      borderRadius: BorderRadius.circular(30),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            appointment['service_name'] ??
+                                                "No Title",
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF6E48AA),
+                                            ),
+                                          ),
+                                        ),
+                                        Icon(Icons.arrow_forward_ios,
+                                            size: 14, color: Colors.grey),
+                                      ],
                                     ),
-                                    child: Text(
-                                      isDone
-                                          ? "✅ Төлөв: Дууссан"
-                                          : "🕓 Төлөв: Хүлээгдэж байна",
-                                      style: TextStyle(
+                                    SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 10,
+                                      runSpacing: 6,
+                                      children: [
+                                        _infoChip(Icons.calendar_today,
+                                            "Огноо: ${appointment['date'] ?? ''}"),
+                                        _infoChip(Icons.access_time,
+                                            "Цаг: ${appointment['time'] ?? ''}"),
+                                        _infoChip(Icons.location_city,
+                                            "Салбар: ${appointment['branch_name'] ?? ''}"),
+                                        _infoChip(Icons.person,
+                                            "Артист: ${appointment['worker_name'] ?? ''}"),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 6, horizontal: 12),
+                                      decoration: BoxDecoration(
                                         color: isDone
-                                            ? Colors.green[800]
-                                            : Colors.orange[800],
-                                        fontWeight: FontWeight.bold,
+                                            ? Colors.green[100]
+                                            : Colors.orange[100],
+                                        borderRadius: BorderRadius.circular(30),
                                       ),
-                                    ),
-                                  )
-                                ],
+                                      child: Text(
+                                        isDone
+                                            ? "✅ Төлөв: Дууссан"
+                                            : "🕓 Төлөв: Хүлээгдэж байна",
+                                        style: TextStyle(
+                                          color: isDone
+                                              ? Colors.green[800]
+                                              : Colors.orange[800],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
                             );
                           },
@@ -227,9 +255,12 @@ class _HistoryPageState extends State<HistoryPage> {
         children: [
           Icon(icon, size: 16, color: Colors.grey[600]),
           SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(color: Colors.black87),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.black87),
+            ),
           ),
         ],
       ),
