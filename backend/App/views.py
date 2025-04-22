@@ -91,6 +91,46 @@ def logout_customer(request):
 
     except TokenError as e:
         return JsonResponse({'error': 'Invalid token'}, status=400)
+    
+
+@csrf_exempt
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_customer(request):
+    customer = request.user
+    data = request.data
+
+    # Get updated fields
+    cname = data.get('cname', customer.cname)
+    cphone = data.get('cphone', customer.cphone)
+    cemail = data.get('cemail', customer.cemail)
+    cimage = request.FILES.get('cimage')
+
+    # Check if the email is being changed and is unique
+    if cemail != customer.cemail:
+        if Customer.objects.filter(cemail=cemail).exclude(pk=customer.pk).exists():
+            return Response({'error': 'This email is already in use.'}, status=400)
+        customer.cemail = cemail
+
+    # Update other fields
+    customer.cname = cname
+    customer.cphone = cphone
+    if cimage:
+        customer.cimage = cimage
+
+    customer.save()
+
+    return Response({
+        'message': 'Customer updated successfully',
+        'user': {
+            'id': customer.customer_id,
+            'email': customer.cemail,
+            'name': customer.cname,
+            'phone': customer.cphone,
+            'image': customer.cimage.url if customer.cimage else None
+        }
+    })
+
 
 ###########################################################################################################################################
 
@@ -916,8 +956,6 @@ def book_service(request):
 from django.utils.timezone import make_aware
 from datetime import datetime, timedelta
 import pytz
-timezone.now()
-
 
 @csrf_exempt
 def get_weekly_bookings(request, worker_id):
@@ -938,13 +976,8 @@ def get_weekly_bookings(request, worker_id):
 
 @csrf_exempt
 def get_monthly_bookings(request, worker_id):
-    ulaanbaatar = pytz.timezone("Asia/Ulaanbaatar")
-    today = datetime.now(ulaanbaatar)
-
-    start_of_month = today.replace(day=1).date()
-    # to get last day of month accurately:
-    next_month = today.replace(day=28) + timedelta(days=4)
-    end_of_month = (next_month - timedelta(days=next_month.day)).date()
+    start_of_month = timezone.now().replace(day=1)
+    end_of_month = start_of_month + timedelta(days=30)
 
     bookings = CalendarEvent.objects.filter(
         worker_id=worker_id,
@@ -953,7 +986,6 @@ def get_monthly_bookings(request, worker_id):
     ).order_by("start_time")
 
     return JsonResponse({"monthly_bookings": list(bookings.values())}, safe=False)
-
 
 ####################################################################################################################################################
 

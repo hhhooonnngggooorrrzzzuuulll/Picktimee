@@ -1,6 +1,11 @@
+import 'dart:io' as io;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfilePage extends StatefulWidget {
   @override
@@ -9,19 +14,90 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _nameController = TextEditingController();
-  TextEditingController _emailController = TextEditingController();
-  TextEditingController _phoneController = TextEditingController();
-  File? _image;
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  Uint8List? _webImage;
+  io.File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      if (kIsWeb) {
+        _webImage = await pickedFile.readAsBytes();
+      } else {
+        _imageFile = io.File(pickedFile.path);
+      }
+      setState(() {});
+    }
+  }
 
-    if (image != null) {
-      setState(() {
-        _image = File(image.path);
-      });
+  Future<void> updateCustomer() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Нэвтэрч орно уу')),
+      );
+      return;
+    }
+
+    final uri = Uri.parse('http://127.0.0.1:8000/update/');
+    var request = http.MultipartRequest('PUT', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..fields['cname'] = _nameController.text
+      ..fields['cemail'] = _emailController.text
+      ..fields['cphone'] = _phoneController.text;
+
+    if (!kIsWeb && _imageFile != null) {
+      request.files
+          .add(await http.MultipartFile.fromPath('cimage', _imageFile!.path));
+    } else if (kIsWeb && _webImage != null) {
+      request.files.add(http.MultipartFile.fromBytes('cimage', _webImage!,
+          filename: 'profile.png'));
+    }
+
+    try {
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Профайл шинэчлэгдлээ')),
+        );
+      } else {
+        final data = json.decode(respStr);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['error'] ?? 'Алдаа гарлаа')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Алдаа гарлаа')),
+      );
+    }
+  }
+
+  Widget _buildProfileImage() {
+    if (kIsWeb && _webImage != null) {
+      return CircleAvatar(radius: 60, backgroundImage: MemoryImage(_webImage!));
+    } else if (_imageFile != null) {
+      return CircleAvatar(radius: 60, backgroundImage: FileImage(_imageFile!));
+    } else {
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.grey[300],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.camera_alt, size: 30, color: Colors.white),
+            SizedBox(height: 4),
+            Text('Зураг нэмэх',
+                style: TextStyle(fontSize: 12, color: Color(0xFF872BC0))),
+          ],
+        ),
+      );
     }
   }
 
@@ -37,30 +113,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
       keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.black87),
         prefixIcon: Icon(icon, color: Colors.deepPurple),
         filled: true,
         fillColor: Colors.white,
         contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.deepPurple.shade100),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.deepPurple),
-          borderRadius: BorderRadius.circular(16),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return validatorMsg;
-        }
-        if (isEmail && !value.contains('@')) {
-          return 'Зөв имэйл оруулна уу';
-        }
+        if (value == null || value.isEmpty) return validatorMsg;
+        if (isEmail && !value.contains('@')) return 'Зөв имэйл оруулна уу';
         return null;
       },
     );
@@ -71,99 +132,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: Color(0xFFF9F6FC),
       appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(top: 10, left: 8),
-          child: IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            color: Colors.white,
-          ),
-        ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Text(
-            'Хувийн мэдээлэл засах',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
         backgroundColor: Color.fromARGB(255, 218, 175, 249),
+        elevation: 0,
+        leading: BackButton(color: Colors.white),
+        title: Text('Хувийн мэдээлэл засах',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold)),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Gradient Header with Photo
               Container(
                 height: 200,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 218, 175, 249),
-                      Color.fromARGB(255, 218, 175, 249),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
-                  ),
+                  color: Color.fromARGB(255, 218, 175, 249),
+                  borderRadius:
+                      BorderRadius.vertical(bottom: Radius.circular(40)),
                 ),
                 child: Center(
                   child: GestureDetector(
                     onTap: _pickImage,
-                    child: Container(
-                      padding: EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 6,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey[200],
-                        backgroundImage:
-                            _image != null ? FileImage(_image!) : null,
-                        child: _image == null
-                            ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.camera_alt,
-                                      size: 30, color: Colors.white),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Зураг нэмэх',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF872BC0),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : null,
-                      ),
-                    ),
+                    child: _buildProfileImage(),
                   ),
                 ),
               ),
-
-              // Form Section
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
@@ -191,63 +188,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         keyboardType: TextInputType.phone,
                         decoration: InputDecoration(
                           labelText: 'Утасны дугаар',
-                          labelStyle: TextStyle(color: Colors.black87),
                           prefixIcon:
                               Icon(Icons.phone, color: Color(0xFF872BC0)),
                           prefixText: '+976 ',
-                          prefixStyle: TextStyle(color: Colors.black),
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: EdgeInsets.symmetric(
                               vertical: 18, horizontal: 16),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Colors.deepPurple.shade100),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF872BC0)),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                              borderRadius: BorderRadius.circular(16)),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
+                          if (value == null || value.isEmpty)
                             return 'Утасны дугаар оруулна уу';
-                          }
-                          if (value.length < 8) {
+                          if (value.length < 8)
                             return 'Утасны дугаар буруу байна';
-                          }
                           return null;
                         },
                       ),
                       SizedBox(height: 30),
-
-                      // Save Button
                       ElevatedButton.icon(
                         onPressed: () {
-                          if (_formKey.currentState?.validate() ?? false) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Профайл шинэчлэгдлээ')),
-                            );
+                          if (_formKey.currentState!.validate()) {
+                            updateCustomer();
                           }
                         },
                         icon: Icon(Icons.save),
-                        label: Text(
-                          'Хадгалах',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        label: Text('Хадгалах', style: TextStyle(fontSize: 16)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Color(0xFF872BC0),
-                          foregroundColor: Colors.white,
                           padding: EdgeInsets.symmetric(
                               horizontal: 32, vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 5,
+                              borderRadius: BorderRadius.circular(16)),
                         ),
                       ),
                       SizedBox(height: 40),
