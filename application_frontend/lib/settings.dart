@@ -56,19 +56,19 @@ class _SettingsPageState extends State<SettingsPage> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _buildSectionTitle('Appearance'),
+                _buildSectionTitle('Өнгө'),
                 _buildCard(child: _buildDarkModeToggle()),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Notifications'),
+                _buildSectionTitle('Мэдэгдэл'),
                 _buildCard(child: _buildNotificationToggle()),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Language'),
+                _buildSectionTitle('хэл'),
                 _buildCard(child: _buildLanguageSelector()),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Support'),
+                _buildSectionTitle('Дэмжлэг'),
                 _buildCard(child: _buildSupportButton()),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Account'),
+                _buildSectionTitle('Хаяг'),
                 _buildCard(child: _buildLogoutButton()),
               ],
             ),
@@ -102,7 +102,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Padding(
               padding: EdgeInsets.only(top: 15),
               child: Text(
-                'Settings',
+                'Тохиргоо',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,

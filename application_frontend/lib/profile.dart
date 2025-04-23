@@ -17,7 +17,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final FlutterSecureStorage storage = FlutterSecureStorage();
-
   dynamic user;
   bool isLoading = true;
   String userString = "";
@@ -25,28 +24,34 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserInfo();
+    });
   }
 
   Future<void> _loadUserInfo() async {
-    isLoading = true;
-    setStates();
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       userString = prefs.getString('user') ?? "{}";
       user = jsonDecode(userString);
-      setStates();
 
-      if (userString != "") {
-        log("test");
-        setStates();
-      } else {}
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print('Error loading user info: $e');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
-    isLoading = false;
-    log("test3");
-    setStates();
   }
 
   Future<void> logout(BuildContext context) async {
@@ -54,8 +59,7 @@ class _ProfilePageState extends State<ProfilePage> {
     String? refreshToken = prefs.getString('refresh_token');
 
     if (refreshToken != null) {
-      final url =
-          Uri.parse('http://127.0.0.1:8000/logout/'); // Update if needed
+      final url = Uri.parse('http://127.0.0.1:8000/logout/');
 
       final response = await http.post(
         url,
@@ -71,18 +75,11 @@ class _ProfilePageState extends State<ProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Амжилттай гарлаа!"),
-            backgroundColor: Colors.green, // Custom background color
-            duration: Duration(seconds: 2), // Custom duration
-            action: SnackBarAction(
-              label: '', // Action label
-              onPressed: () {
-                // Action callback, for example, undo login attempt
-              },
-            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
 
-        // Navigate to bottom page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MyHomePage()),
@@ -91,23 +88,11 @@ class _ProfilePageState extends State<ProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Гарахад алдаа гарлаа!"),
-            backgroundColor: Colors.red, // Custom background color
-            duration: Duration(seconds: 2), // Custom duration
-            action: SnackBarAction(
-              label: '', // Action label
-              onPressed: () {
-                // Action callback, for example, undo login attempt
-              },
-            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
           ),
         );
       }
-    }
-  }
-
-  setStates() {
-    if (mounted) {
-      setState(() {});
     }
   }
 
@@ -133,17 +118,28 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      size: 50,
-                      color: Color.fromARGB(255, 218, 175, 249),
-                    ),
+                    backgroundImage: userString != "" &&
+                            user != null &&
+                            user['image'] != null
+                        ? NetworkImage('http://127.0.0.1:8000${user['image']}')
+                        : null,
+                    child: userString == "" ||
+                            user == null ||
+                            user['image'] == null
+                        ? Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Color.fromARGB(255, 218, 175, 249),
+                          )
+                        : null,
                   ),
                   SizedBox(height: 16),
                   isLoading
                       ? CupertinoActivityIndicator()
                       : Text(
-                          userString == "" ? 'Loading...' : user["name"],
+                          userString == "" || user == null
+                              ? 'Loading...'
+                              : user["name"] ?? 'No name',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -153,11 +149,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   isLoading
                       ? CupertinoActivityIndicator()
                       : Text(
-                          userString == "" ? 'Loading...' : user["email"],
+                          userString == "" || user == null
+                              ? 'Loading...'
+                              : user["email"] ?? 'No email',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            // fontStyle: FontStyle.italic,
                             color: Color(0xFF872BC0),
                           ),
                         ),
@@ -170,11 +167,15 @@ class _ProfilePageState extends State<ProfilePage> {
             context,
             icon: Icons.person,
             text: "Мэдээлэл засах",
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => EditProfilePage()),
               );
+
+              if (result == true) {
+                await _loadUserInfo();
+              }
             },
           ),
           _buildProfileOption(
