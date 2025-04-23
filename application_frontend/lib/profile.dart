@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'edit_profile.dart';
 import 'history.dart';
+import 'settings.dart';
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -192,7 +193,10 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icons.settings,
             text: "Тохиргоо",
             onTap: () {
-              // Future settings implementation
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => SettingsPage()),
+              );
             },
           ),
           _buildProfileOption(
