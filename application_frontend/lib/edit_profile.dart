@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -31,16 +32,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('user') ?? '{}';
-    final user = json.decode(userString);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userString = prefs.getString('user') ?? '{}';
+      log(userString);
 
-    setState(() {
-      _nameController.text = user['name'] ?? '';
-      _emailController.text = user['email'] ?? '';
-      _phoneController.text = user['phone'] ?? '';
-      _isLoading = false;
-    });
+      final user = json.decode(userString) as Map<String, dynamic>;
+
+      setState(() {
+        _nameController.text = user['name'] ?? '';
+        _emailController.text = user['email'] ?? '';
+        _phoneController.text = user['phone'] ?? '';
+        _isLoading = false;
+      });
+    } catch (e, stackTrace) {
+      log('Failed to load user: $e');
+      log(stackTrace.toString());
+      // Optionally set _isLoading to false even if error occurs
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _pickImage() async {
@@ -70,6 +80,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final uri = Uri.parse('http://127.0.0.1:8000/update/');
     var request = http.MultipartRequest('PUT', uri)
       ..headers['Authorization'] = 'Bearer $token'
+      ..headers['Accept'] = 'application/json'
+      ..headers['Content-type'] = 'application/json'
       ..fields['cname'] = _nameController.text
       ..fields['cemail'] = _emailController.text
       ..fields['cphone'] = _phoneController.text;
@@ -86,8 +98,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
       if (response.statusCode == 200) {
+        String userString = jsonEncode((jsonDecode(respStr)["user"]));
         // Update the user data in SharedPreferences
-        await prefs.setString('user', respStr);
+        await prefs.setString('user', userString);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Профайл шинэчлэгдлээ')),

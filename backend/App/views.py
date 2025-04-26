@@ -66,6 +66,8 @@ def login_customer(request):
                 'id': customer.customer_id,
                 'email': customer.cemail,
                 'name': customer.cname,
+                'phone': customer.cphone,
+                'image': customer.cimage.url if customer.cimage else None
             }
         })
     else:
@@ -97,6 +99,7 @@ def logout_customer(request):
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_customer(request):
+    
     customer = request.user
     data = request.data
 
