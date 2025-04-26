@@ -1,10 +1,9 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'bottom_bar.dart'; // <-- Replace this with the actual path
+import 'bottom_bar.dart'; // Replace with your actual path
 
 class SelectServicePage extends StatefulWidget {
   @override
@@ -21,7 +20,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
   List<Map<String, dynamic>> branches = [];
   List<Map<String, dynamic>> workers = [];
   List<Map<String, dynamic>> services = [];
-  List<Map<String, dynamic>> appointments = []; // Added appointments list
+  List<Map<String, dynamic>> appointments = [];
 
   dynamic user;
   bool isLoading = true;
@@ -39,9 +38,6 @@ class _SelectServicePageState extends State<SelectServicePage> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       userString = prefs.getString('user') ?? "{}";
       user = jsonDecode(userString);
-
-      log("User loaded: $user");
-
       setState(() {});
     } catch (e) {
       print('Error loading user info: $e');
@@ -51,7 +47,6 @@ class _SelectServicePageState extends State<SelectServicePage> {
   Future<void> fetchData() async {
     try {
       final response = await http.get(Uri.parse("http://127.0.0.1:8000/book/"));
-
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         setState(() {
@@ -141,7 +136,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 25),
 
-                      // Салбар сонгох
+                      // Branch Selection
                       DropdownButtonFormField<String>(
                         decoration: _inputDecoration("Салбар сонгох"),
                         value: selectedBranch,
@@ -162,7 +157,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 15),
 
-                      // Үйлчилгээ сонгох
+                      // Service Selection
                       DropdownButtonFormField<String>(
                         decoration: _inputDecoration("Үйлчилгээ сонгох"),
                         value: selectedService,
@@ -183,7 +178,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 25),
 
-                      // Огноо сонгох
+                      // Date Selection
                       ListTile(
                         tileColor: Colors.white.withOpacity(0.8),
                         shape: RoundedRectangleBorder(
@@ -207,8 +202,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                           if (pickedDate != null) {
                             setState(() {
                               selectedDate = pickedDate;
-                              selectedTime =
-                                  null; // Reset time when date changes
+                              selectedTime = null;
                             });
                             await fetchAppointments();
                           }
@@ -216,7 +210,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 10),
 
-                      // Ажилтан сонгох
+                      // Worker Selection
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -246,8 +240,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                                 onPressed: () {
                                   setState(() {
                                     selectedWorker = worker["id"].toString();
-                                    selectedTime =
-                                        null; // Reset time when worker changes
+                                    selectedTime = null;
                                   });
                                   fetchAppointments();
                                 },
@@ -260,7 +253,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
 
                       SizedBox(height: 15),
 
-                      // Цаг сонгох
+                      // Time Selection
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -289,7 +282,6 @@ class _SelectServicePageState extends State<SelectServicePage> {
                               int hour = 9 + index;
                               TimeOfDay time = TimeOfDay(hour: hour, minute: 0);
 
-                              // Check if this time is booked for the selected worker and date
                               bool isBooked = appointments.any((appointment) {
                                 DateTime appointmentDate =
                                     DateTime.parse(appointment['date']);
@@ -324,13 +316,10 @@ class _SelectServicePageState extends State<SelectServicePage> {
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isBooked
-                                        ? Colors.grey[
-                                            400] // Booked time - inactive color
+                                        ? Colors.grey[400]
                                         : isSelected
-                                            ? Color.fromARGB(255, 98, 24,
-                                                158) // Selected time
-                                            : Colors.white.withOpacity(
-                                                0.8), // Available time
+                                            ? Color.fromARGB(255, 98, 24, 158)
+                                            : Colors.white.withOpacity(0.8),
                                     foregroundColor: isBooked
                                         ? Colors.white
                                         : isSelected
@@ -463,14 +452,14 @@ class _SelectServicePageState extends State<SelectServicePage> {
 
         if (response.statusCode == 201) {
           _showDialog("Амжилттай", "Таны захиалга амжилттай!", () {
-            Navigator.pop(context); // close dialog
+            Navigator.pop(context);
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => MyHomePage()),
             );
           });
         } else {
-          _showDialog("Алдаа", responseData["error"] ?? "Алдаа гарлаа.");
+          _showDialog("Алдаа", responseData["message"] ?? "Алдаа гарлаа.");
         }
       } catch (e) {
         _showDialog("Алдаа", "Сервертэй холбогдож чадсангүй.");

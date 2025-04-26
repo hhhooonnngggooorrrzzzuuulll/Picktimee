@@ -898,9 +898,16 @@ from datetime import datetime, timedelta
 from .models import CalendarEvent, Service, Customer, Worker, Branch
 from django.utils import timezone
 from .models import *
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from datetime import datetime, timedelta
+import json
+import pytz
 
 @csrf_exempt
-@api_view(["GET", "POST"])
+@require_http_methods(["GET", "POST"])
 def book_service(request):
     if request.method == "GET":
         branches = list(Branch.objects.values("branch_id", "bname"))
@@ -923,22 +930,25 @@ def book_service(request):
             date_str = data.get("date")
             time_str = data.get("time")
 
-            if not (service_id and customer_id and branch_id and date_str and time_str):
-                return JsonResponse({"error": "Missing required fields"}, status=400)
+            if not all([service_id, customer_id, branch_id, date_str, time_str]):
+                return JsonResponse({"message": "Бүх талбарыг бөглөнө үү"}, status=400)
 
+            ulaanbaatar = pytz.timezone("Asia/Ulaanbaatar")
             start_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %I:%M %p")
+            start_time = ulaanbaatar.localize(start_time)
             end_time = start_time + timedelta(hours=1)
 
-            # Check if worker is booked
-            if worker_id:
-                worker_booked = CalendarEvent.objects.filter(
-                    worker_id=worker_id,
-                    start_time__lt=end_time,
-                    end_time__gt=start_time,
-                ).exists()
-                if worker_booked:
-                    return JsonResponse({"error": "Worker is already booked"}, status=400)
+            # Check for existing appointments
+            existing_appointments = CalendarEvent.objects.filter(
+                worker_id=worker_id,
+                start_time__lt=end_time,
+                end_time__gt=start_time,
+            ).exists()
 
+            if existing_appointments:
+                return JsonResponse({"message": "Сонгосон цагт захиалга байна. Өөр цаг сонгоно уу."}, status=200)
+
+            # Create new appointment
             event = CalendarEvent.objects.create(
                 service_id=service_id,
                 customer_id=customer_id,
@@ -949,12 +959,45 @@ def book_service(request):
                 description=f"Booking for service {service_id} at branch {branch_id}",
             )
 
-            return JsonResponse({"message": "Booking successful", "event_id": event.event_id}, status=201)
+            return JsonResponse({
+                "message": "Захиалга амжилттай боллоо!",
+                "event_id": event.event_id
+            }, status=201)
 
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+            return JsonResponse({"message": f"Алдаа гарлаа: {str(e)}"}, status=500)
 
-    return JsonResponse({"error": "Invalid request method"}, status=405)
+    return JsonResponse({"message": "Invalid request method"}, status=405)
+
+
+@csrf_exempt
+def get_appointments(request):
+    worker_id = request.GET.get("worker_id")
+    date_str = request.GET.get("date")
+    
+    if not worker_id or not date_str:
+        return JsonResponse({"appointments": []})
+    
+    try:
+        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        appointments = CalendarEvent.objects.filter(
+            worker_id=worker_id,
+            start_time__date=date
+        ).values('id', 'start_time', 'end_time')
+        
+        # Format the appointments for response
+        formatted_appointments = []
+        for appt in appointments:
+            formatted_appointments.append({
+                "id": appt["id"],
+                "date": appt["start_time"].strftime("%Y-%m-%d"),
+                "time": appt["start_time"].strftime("%I:%M %p"),
+                "worker_id": worker_id
+            })
+        
+        return JsonResponse({"appointments": formatted_appointments})
+    except Exception as e:
+        return JsonResponse({"appointments": [], "error": str(e)})
 
 from django.utils.timezone import make_aware
 from datetime import datetime, timedelta
