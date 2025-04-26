@@ -21,6 +21,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
   List<Map<String, dynamic>> branches = [];
   List<Map<String, dynamic>> workers = [];
   List<Map<String, dynamic>> services = [];
+  List<Map<String, dynamic>> appointments = []; // Added appointments list
 
   dynamic user;
   bool isLoading = true;
@@ -67,6 +68,24 @@ class _SelectServicePageState extends State<SelectServicePage> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> fetchAppointments() async {
+    if (selectedWorker == null || selectedDate == null) return;
+
+    try {
+      final response = await http.get(Uri.parse(
+          "http://127.0.0.1:8000/appointments/?worker_id=$selectedWorker&date=${DateFormat('yyyy-MM-dd').format(selectedDate!)}"));
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        setState(() {
+          appointments = List<Map<String, dynamic>>.from(data["appointments"]);
+        });
+      }
+    } catch (e) {
+      print("Error fetching appointments: $e");
     }
   }
 
@@ -164,48 +183,6 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 25),
 
-                      // Ажилтан сонгох
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Ажилтан сонгох",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color.fromARGB(
-                                  255, 98, 24, 158), // Fixed color property
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: workers.map<Widget>((worker) {
-                              final isSelected =
-                                  selectedWorker == worker["id"].toString();
-                              return ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isSelected
-                                      ? Color.fromARGB(255, 98, 24, 158)
-                                      : Colors.grey[200],
-                                  foregroundColor:
-                                      isSelected ? Colors.white : Colors.black,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    selectedWorker = worker["id"].toString();
-                                  });
-                                },
-                                child: Text(worker["name"]),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-
-                      SizedBox(height: 15),
-
                       // Огноо сонгох
                       ListTile(
                         tileColor: Colors.white.withOpacity(0.8),
@@ -230,39 +207,160 @@ class _SelectServicePageState extends State<SelectServicePage> {
                           if (pickedDate != null) {
                             setState(() {
                               selectedDate = pickedDate;
+                              selectedTime =
+                                  null; // Reset time when date changes
                             });
+                            await fetchAppointments();
                           }
                         },
                       ),
                       SizedBox(height: 10),
 
-                      // Цаг сонгох
-                      ListTile(
-                        tileColor: Colors.white.withOpacity(0.8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        title: Text(
-                          selectedTime == null
-                              ? "Цаг сонгох"
-                              : selectedTime!.format(context),
-                          style: TextStyle(
-                              color: Color.fromARGB(255, 98, 24, 158)),
-                        ),
-                        trailing: Icon(Icons.access_time,
-                            color: Color.fromARGB(255, 98, 24, 158)),
-                        onTap: () async {
-                          TimeOfDay? pickedTime = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                          );
-                          if (pickedTime != null) {
-                            setState(() {
-                              selectedTime = pickedTime;
-                            });
-                          }
-                        },
+                      // Ажилтан сонгох
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Ажилтан сонгох",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromARGB(255, 98, 24, 158),
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: workers.map<Widget>((worker) {
+                              final isSelected =
+                                  selectedWorker == worker["id"].toString();
+                              return ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSelected
+                                      ? Color.fromARGB(255, 98, 24, 158)
+                                      : Colors.grey[200],
+                                  foregroundColor:
+                                      isSelected ? Colors.white : Colors.black,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedWorker = worker["id"].toString();
+                                    selectedTime =
+                                        null; // Reset time when worker changes
+                                  });
+                                  fetchAppointments();
+                                },
+                                child: Text(worker["name"]),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 25),
+
+                      SizedBox(height: 15),
+
+                      // Цаг сонгох
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Цаг сонгох",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromARGB(255, 98, 24, 158),
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          if (selectedWorker == null || selectedDate == null)
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                "Ажилтан болон огноо сонгоно уу",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: List.generate(12, (index) {
+                              int hour = 9 + index;
+                              TimeOfDay time = TimeOfDay(hour: hour, minute: 0);
+
+                              // Check if this time is booked for the selected worker and date
+                              bool isBooked = appointments.any((appointment) {
+                                DateTime appointmentDate =
+                                    DateTime.parse(appointment['date']);
+                                TimeOfDay appointmentTime = TimeOfDay(
+                                  hour: int.parse(
+                                      appointment['time'].split(':')[0]),
+                                  minute: int.parse(
+                                      appointment['time'].split(':')[1]),
+                                );
+
+                                return appointment['worker_id'].toString() ==
+                                        selectedWorker &&
+                                    appointmentDate.year ==
+                                        selectedDate?.year &&
+                                    appointmentDate.month ==
+                                        selectedDate?.month &&
+                                    appointmentDate.day == selectedDate?.day &&
+                                    appointmentTime.hour == time.hour &&
+                                    appointmentTime.minute == time.minute;
+                              });
+
+                              bool isSelected =
+                                  selectedTime?.hour == time.hour &&
+                                      selectedTime?.minute == time.minute;
+                              bool isEnabled = !isBooked &&
+                                  selectedWorker != null &&
+                                  selectedDate != null;
+
+                              return SizedBox(
+                                width: 120,
+                                height: 30,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isBooked
+                                        ? Colors.grey[
+                                            400] // Booked time - inactive color
+                                        : isSelected
+                                            ? Color.fromARGB(255, 98, 24,
+                                                158) // Selected time
+                                            : Colors.white.withOpacity(
+                                                0.8), // Available time
+                                    foregroundColor: isBooked
+                                        ? Colors.white
+                                        : isSelected
+                                            ? Colors.white
+                                            : Color.fromARGB(255, 98, 24, 158),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: isSelected ? 8 : 2,
+                                  ),
+                                  onPressed: isEnabled
+                                      ? () {
+                                          setState(() {
+                                            selectedTime = time;
+                                          });
+                                        }
+                                      : null,
+                                  child: Text(
+                                    time.format(context),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          SizedBox(height: 25),
+                        ],
+                      ),
 
                       // Buttons
                       Row(

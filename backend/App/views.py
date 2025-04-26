@@ -904,12 +904,12 @@ from .models import *
 def book_service(request):
     if request.method == "GET":
         branches = list(Branch.objects.values("branch_id", "bname"))
-        workers = list(Worker.objects.values("worker_id", "wfirst"))
+        workers = list(Worker.objects.values("worker_id", "wname"))
         services = list(Service.objects.values("service_id", "sname"))
 
         return JsonResponse({
             "branches": [{"id": b["branch_id"], "name": b["bname"]} for b in branches],
-            "workers": [{"id": w["worker_id"], "name": w["wfirst"]} for w in workers],
+            "workers": [{"id": w["worker_id"], "name": w["wname"]} for w in workers],
             "services": [{"id": s["service_id"], "name": s["sname"]} for s in services],
         })
 
