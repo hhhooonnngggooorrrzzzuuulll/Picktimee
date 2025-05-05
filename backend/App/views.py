@@ -934,8 +934,9 @@ def book_service(request):
                 return JsonResponse({"message": "Бүх талбарыг бөглөнө үү"}, status=400)
 
             ulaanbaatar = pytz.timezone("Asia/Ulaanbaatar")
-            start_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %I:%M %p")
-            start_time = ulaanbaatar.localize(start_time)
+            
+            start_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+            start_time = start_time.astimezone(ulaanbaatar)
             end_time = start_time + timedelta(hours=1)
 
             # Check for existing appointments
@@ -983,22 +984,25 @@ def get_appointments(request):
         appointments = CalendarEvent.objects.filter(
             worker_id=worker_id,
             start_time__date=date
-        ).values('id', 'start_time', 'end_time')
+        ).values('event_id', 'start_time', 'end_time')
         
         # Format the appointments for response
         formatted_appointments = []
+        user_tz = pytz.timezone("Asia/Ulaanbaatar")  # ← тохирох цагийн бүс
+        
         for appt in appointments:
+            local_start = appt["start_time"].astimezone(user_tz)  # ← хөрвүүлж байна
             formatted_appointments.append({
-                "id": appt["id"],
-                "date": appt["start_time"].strftime("%Y-%m-%d"),
-                "time": appt["start_time"].strftime("%I:%M %p"),
+                "id": appt["event_id"],
+                "date": local_start.strftime("%Y-%m-%d"),
+                "time": local_start.strftime("%H:%M"),  # ← 24 цаг формат
                 "worker_id": worker_id
             })
         
         return JsonResponse({"appointments": formatted_appointments})
     except Exception as e:
         return JsonResponse({"appointments": [], "error": str(e)})
-
+    
 from django.utils.timezone import make_aware
 from datetime import datetime, timedelta
 import pytz

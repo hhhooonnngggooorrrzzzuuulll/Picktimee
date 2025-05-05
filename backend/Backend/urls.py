@@ -39,7 +39,7 @@ urlpatterns = [
     path('logout/', logout_customer, name='logout_customer'),
     path('update/', update_customer, name='update_customer'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
+    path('appointments/', get_appointments, name='get_appointments'),
     # path('service_search/', service_search, name='service_search'),
 ]
 

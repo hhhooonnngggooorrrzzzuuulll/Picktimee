@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -14,7 +15,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
   String? selectedBranch;
   String? selectedWorker;
   String? selectedService;
-  DateTime? selectedDate;
+  DateTime selectedDate = DateTime.now();
   TimeOfDay? selectedTime;
 
   List<Map<String, dynamic>> branches = [];
@@ -67,14 +68,16 @@ class _SelectServicePageState extends State<SelectServicePage> {
   }
 
   Future<void> fetchAppointments() async {
-    if (selectedWorker == null || selectedDate == null) return;
-
+    if (selectedWorker == null || selectedDate == null) {
+      return;
+    }
     try {
       final response = await http.get(Uri.parse(
           "http://127.0.0.1:8000/appointments/?worker_id=$selectedWorker&date=${DateFormat('yyyy-MM-dd').format(selectedDate!)}"));
-
+      log(response.body.toString());
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
+
         setState(() {
           appointments = List<Map<String, dynamic>>.from(data["appointments"]);
         });
@@ -82,6 +85,12 @@ class _SelectServicePageState extends State<SelectServicePage> {
     } catch (e) {
       print("Error fetching appointments: $e");
     }
+  }
+
+  String formatTimeOfDay24(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 
   @override
@@ -195,7 +204,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                         onTap: () async {
                           DateTime? pickedDate = await showDatePicker(
                             context: context,
-                            initialDate: DateTime.now(),
+                            initialDate: selectedDate,
                             firstDate: DateTime.now(),
                             lastDate: DateTime(2100),
                           );
@@ -282,7 +291,16 @@ class _SelectServicePageState extends State<SelectServicePage> {
                               int hour = 9 + index;
                               TimeOfDay time = TimeOfDay(hour: hour, minute: 0);
 
-                              bool isBooked = appointments.any((appointment) {
+                              DateTime now = DateTime.now();
+                              DateTime checkDay = DateTime.parse(
+                                  "${DateFormat('yyyy-MM-dd').format(selectedDate)} ${hour < 10 ? '0$hour' : hour}:00");
+                              bool isBooked = false;
+                              if (now.isAfter(checkDay)) {
+                                isBooked = true;
+                              } else {
+                                isBooked = false;
+                              }
+                              if (appointments.any((appointment) {
                                 DateTime appointmentDate =
                                     DateTime.parse(appointment['date']);
                                 TimeOfDay appointmentTime = TimeOfDay(
@@ -301,7 +319,9 @@ class _SelectServicePageState extends State<SelectServicePage> {
                                     appointmentDate.day == selectedDate?.day &&
                                     appointmentTime.hour == time.hour &&
                                     appointmentTime.minute == time.minute;
-                              });
+                              })) {
+                                isBooked = true;
+                              }
 
                               bool isSelected =
                                   selectedTime?.hour == time.hour &&
@@ -338,7 +358,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
                                         }
                                       : null,
                                   child: Text(
-                                    time.format(context),
+                                    formatTimeOfDay24(time),
                                     style: TextStyle(
                                       fontSize: 16,
                                     ),
@@ -421,7 +441,7 @@ class _SelectServicePageState extends State<SelectServicePage> {
         selectedDate != null &&
         selectedTime != null) {
       String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate!);
-      String formattedTime = selectedTime!.format(context);
+      String formattedTime = formatTimeOfDay24(selectedTime!);
 
       if (user == null || user["id"] == null) {
         ScaffoldMessenger.of(context).showSnackBar(
