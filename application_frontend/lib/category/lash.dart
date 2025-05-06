@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../select_service.dart';
+import '../login.dart'; // Логин хуудсыг импортлох
 
 class LashPage extends StatefulWidget {
   @override
@@ -11,11 +14,25 @@ class _LashPageState extends State<LashPage> {
   bool isGrid = true;
   List<dynamic> categories = [];
   List<dynamic> services = [];
+  String userString = '';
+  dynamic user = {};
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     fetchServices();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      userString = prefs.getString('user') ?? "{}";
+      user = jsonDecode(userString);
+      setState(() {});
+    } catch (e) {
+      print('Error loading user info: $e');
+    }
   }
 
   Future<void> fetchServices() async {
@@ -38,6 +55,22 @@ class _LashPageState extends State<LashPage> {
       }
     } catch (e) {
       print("Error: $e");
+    }
+  }
+
+  void _onBookPressed() {
+    if (user.isEmpty) {
+      // Хэрэглэгч нэвтрээгүй бол логин руу шилжих
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+    } else {
+      // Хэрэглэгч нэвтэрсэн бол select_service.dart руу шилжих
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SelectServicePage()),
+      );
     }
   }
 
@@ -123,8 +156,8 @@ class _LashPageState extends State<LashPage> {
                             price: service['sprice'],
                             duration: service['sduration'],
                             imageUrl: imageUrl,
-                            onBookPressed: () =>
-                                print("Захиалах: ${service['sname']}"),
+                            onBookPressed:
+                                _onBookPressed, // Дээрх үйлдэлд нэмэх
                           );
                         },
                       )
@@ -142,8 +175,8 @@ class _LashPageState extends State<LashPage> {
                             price: service['sprice'],
                             duration: service['sduration'],
                             imageUrl: imageUrl,
-                            onBookPressed: () =>
-                                print("Захиалах: ${service['sname']}"),
+                            onBookPressed:
+                                _onBookPressed, // Дээрх үйлдэлд нэмэх
                           );
                         },
                       ),
@@ -200,7 +233,7 @@ class ServiceCard extends StatelessWidget {
                     style: TextStyle(fontSize: 12, color: Colors.grey)),
                 SizedBox(height: 8),
                 ElevatedButton(
-                  onPressed: onBookPressed,
+                  onPressed: onBookPressed, // Товчлуурын үйлдлийг холбох
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFDAAFF9),
                     shape: RoundedRectangleBorder(
@@ -265,7 +298,7 @@ class ServiceTile extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: ElevatedButton(
-                      onPressed: onBookPressed,
+                      onPressed: onBookPressed, // Товчлуурын үйлдлийг холбох
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFDAAFF9),
                         padding:

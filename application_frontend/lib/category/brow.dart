@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../select_service.dart';
+import '../login.dart'; // Import your LoginPage here
 
 class BrowPage extends StatefulWidget {
   @override
@@ -38,6 +41,31 @@ class _BrowPageState extends State<BrowPage> {
       }
     } catch (e) {
       print("Error: $e");
+    }
+  }
+
+  Future<bool> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userString = prefs.getString('user');
+    if (userString == null || userString.isEmpty) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  void _onBookPressed(serviceName) async {
+    bool isLoggedIn = await _checkLoginStatus();
+    if (isLoggedIn) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SelectServicePage()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
     }
   }
 
@@ -124,7 +152,7 @@ class _BrowPageState extends State<BrowPage> {
                             duration: service['sduration'],
                             imageUrl: imageUrl,
                             onBookPressed: () =>
-                                print("Захиалах: ${service['sname']}"),
+                                _onBookPressed(service['sname']),
                           );
                         },
                       )
@@ -143,7 +171,7 @@ class _BrowPageState extends State<BrowPage> {
                             duration: service['sduration'],
                             imageUrl: imageUrl,
                             onBookPressed: () =>
-                                print("Захиалах: ${service['sname']}"),
+                                _onBookPressed(service['sname']),
                           );
                         },
                       ),
