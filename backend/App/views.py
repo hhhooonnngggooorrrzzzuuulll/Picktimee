@@ -619,7 +619,35 @@ def get_piercing_services(request):
         return JsonResponse({"categories": category_data, "services": service_data})
     
     return JsonResponse({"categories": [], "services": []})
+############################################################################################################################################
+from django.http import JsonResponse
+from .models import Service
+from django.db.models import Q
 
+def search_services(request):
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse({"services": []})
+    
+    # Filter services where name or comment contains the query (case-insensitive)
+    services = Service.objects.filter(
+        Q(sname__icontains=query) | Q(scomment__icontains=query)
+    )
+
+    service_data = [{
+        "service_id": service.service_id,
+        "sname": service.sname,
+        "sprice": str(service.sprice),
+        "simage": service.simage.url if service.simage else None,
+        "sduration": service.sduration,
+        "scomment": service.scomment,
+        "category": {
+            "category_id": service.category.category_id,
+            "cname": service.category.cname
+        } if service.category else None
+    } for service in services]
+
+    return JsonResponse({"services": service_data}, status=200)
 
 
 ############################################################################################################################################3

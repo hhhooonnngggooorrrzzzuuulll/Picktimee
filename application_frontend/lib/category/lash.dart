@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../select_service.dart';
-import '../login.dart'; // Логин хуудсыг импортлох
+import '../login.dart';
 
 class LashPage extends StatefulWidget {
   @override
@@ -60,13 +60,11 @@ class _LashPageState extends State<LashPage> {
 
   void _onBookPressed() {
     if (user.isEmpty) {
-      // Хэрэглэгч нэвтрээгүй бол логин руу шилжих
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => LoginPage()),
       );
     } else {
-      // Хэрэглэгч нэвтэрсэн бол select_service.dart руу шилжих
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SelectServicePage()),
@@ -78,29 +76,29 @@ class _LashPageState extends State<LashPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFFDF7FF),
-      body: Column(
-        children: [
-          Container(
-            height: 90,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFDAAFF9), Color(0xFFF2DBFF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.purple.withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: Offset(0, 4),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              height: 90,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFDAAFF9), Color(0xFFF2DBFF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-            child: SafeArea(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.2),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18.0),
                 child: Row(
@@ -129,59 +127,59 @@ class _LashPageState extends State<LashPage> {
                 ),
               ),
             ),
-          ),
-          SizedBox(height: 12),
-          Expanded(
-            child: services.isEmpty
-                ? Center(
-                    child: CircularProgressIndicator(color: Color(0xFFDAAFF9)))
-                : isGrid
-                    ? GridView.builder(
-                        padding: EdgeInsets.all(16),
-                        itemCount: services.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                          childAspectRatio: 0.70,
+            SizedBox(height: 12),
+            Expanded(
+              child: services.isEmpty
+                  ? Center(
+                      child:
+                          CircularProgressIndicator(color: Color(0xFFDAAFF9)))
+                  : isGrid
+                      ? GridView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: services.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                            childAspectRatio: 0.70,
+                          ),
+                          itemBuilder: (context, index) {
+                            final service = services[index];
+                            final imageUrl = service['simage'] != null
+                                ? 'http://127.0.0.1:8000${service['simage']}'
+                                : 'https://via.placeholder.com/150';
+
+                            return ServiceCard(
+                              name: service['sname'],
+                              price: service['sprice'],
+                              duration: service['sduration'],
+                              imageUrl: imageUrl,
+                              onBookPressed: _onBookPressed,
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: services.length,
+                          itemBuilder: (context, index) {
+                            final service = services[index];
+                            final imageUrl = service['simage'] != null
+                                ? 'http://127.0.0.1:8000${service['simage']}'
+                                : 'https://via.placeholder.com/150';
+
+                            return ServiceTile(
+                              name: service['sname'],
+                              price: service['sprice'],
+                              duration: service['sduration'],
+                              imageUrl: imageUrl,
+                              onBookPressed: _onBookPressed,
+                            );
+                          },
                         ),
-                        itemBuilder: (context, index) {
-                          final service = services[index];
-                          final imageUrl = service['simage'] != null
-                              ? 'http://127.0.0.1:8000${service['simage']}'
-                              : 'https://via.placeholder.com/150';
-
-                          return ServiceCard(
-                            name: service['sname'],
-                            price: service['sprice'],
-                            duration: service['sduration'],
-                            imageUrl: imageUrl,
-                            onBookPressed:
-                                _onBookPressed, // Дээрх үйлдэлд нэмэх
-                          );
-                        },
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.all(16),
-                        itemCount: services.length,
-                        itemBuilder: (context, index) {
-                          final service = services[index];
-                          final imageUrl = service['simage'] != null
-                              ? 'http://127.0.0.1:8000${service['simage']}'
-                              : 'https://via.placeholder.com/150';
-
-                          return ServiceTile(
-                            name: service['sname'],
-                            price: service['sprice'],
-                            duration: service['sduration'],
-                            imageUrl: imageUrl,
-                            onBookPressed:
-                                _onBookPressed, // Дээрх үйлдэлд нэмэх
-                          );
-                        },
-                      ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -233,7 +231,7 @@ class ServiceCard extends StatelessWidget {
                     style: TextStyle(fontSize: 12, color: Colors.grey)),
                 SizedBox(height: 8),
                 ElevatedButton(
-                  onPressed: onBookPressed, // Товчлуурын үйлдлийг холбох
+                  onPressed: onBookPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFDAAFF9),
                     shape: RoundedRectangleBorder(
@@ -298,7 +296,7 @@ class ServiceTile extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: ElevatedButton(
-                      onPressed: onBookPressed, // Товчлуурын үйлдлийг холбох
+                      onPressed: onBookPressed,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFFDAAFF9),
                         padding:
