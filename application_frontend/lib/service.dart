@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'category/lash.dart';
 import 'category/manicure.dart';
@@ -9,6 +10,8 @@ import 'category/brow.dart';
 import 'category/pedicure.dart';
 import 'category/skincare.dart';
 import 'category/piercing.dart';
+import 'login.dart';
+import 'select_service.dart';
 
 class ServicePage extends StatefulWidget {
   @override
@@ -35,13 +38,16 @@ class _ServicePageState extends State<ServicePage> {
   late Timer _timer;
   TextEditingController _searchController = TextEditingController();
   List<dynamic> _searchResults = [];
-
   final String baseUrl = 'http://127.0.0.1:8000';
+
+  Map<String, dynamic> user = {};
+  String userString = "";
 
   @override
   void initState() {
     super.initState();
     _startAutoSlide();
+    _loadUserInfo();
   }
 
   void _startAutoSlide() {
@@ -50,6 +56,17 @@ class _ServicePageState extends State<ServicePage> {
         _currentIndex = (_currentIndex + 1) % sliderImages.length;
       });
     });
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      userString = prefs.getString('user') ?? "{}";
+      user = jsonDecode(userString);
+      setState(() {});
+    } catch (e) {
+      print('Error loading user info: $e');
+    }
   }
 
   @override
@@ -88,12 +105,26 @@ class _ServicePageState extends State<ServicePage> {
     }
   }
 
+  void _onBookPressed() {
+    if (user.isEmpty || user["id"] == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => SelectServicePage()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // Modern Search Bar
+          // Search Bar
           Container(
             height: 170,
             decoration: BoxDecoration(
@@ -156,7 +187,7 @@ class _ServicePageState extends State<ServicePage> {
             ),
           ),
 
-          // Slider
+          // Image Slider
           Container(
             margin: EdgeInsets.fromLTRB(40, 20, 40, 0),
             width: double.infinity,
@@ -170,7 +201,7 @@ class _ServicePageState extends State<ServicePage> {
             ),
           ),
 
-          // Search Results or Service Grid
+          // Search Results or Grid
           Expanded(
             child: _searchResults.isNotEmpty
                 ? ListView.builder(
@@ -183,35 +214,12 @@ class _ServicePageState extends State<ServicePage> {
                         imageUrl = '$baseUrl$imageUrl';
                       }
 
-                      return Card(
-                        elevation: 4,
-                        margin: EdgeInsets.only(bottom: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: ListTile(
-                          contentPadding: EdgeInsets.all(12),
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              imageUrl,
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(Icons.broken_image, size: 40),
-                            ),
-                          ),
-                          title: Text(
-                            service['sname'] ?? '',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          subtitle: Text(
-                            '${service['sprice']}₮  •  ${service['sduration']} мин',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ),
+                      return ServiceCard(
+                        name: service['sname'],
+                        price: service['sprice'],
+                        duration: service['sduration'],
+                        imageUrl: imageUrl,
+                        onBookPressed: _onBookPressed,
                       );
                     },
                   )
@@ -280,6 +288,75 @@ class _ServicePageState extends State<ServicePage> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Custom Card Widget
+class ServiceCard extends StatelessWidget {
+  final String name;
+  final String price;
+  final String duration;
+  final String imageUrl;
+  final VoidCallback onBookPressed;
+
+  ServiceCard({
+    required this.name,
+    required this.price,
+    required this.duration,
+    required this.imageUrl,
+    required this.onBookPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl,
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(Icons.broken_image, size: 40),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  SizedBox(height: 4),
+                  Text('$price₮  •  $duration мин',
+                      style: TextStyle(color: Colors.grey[600])),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              onPressed: onBookPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFDAAFF9),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child:
+                  Text("Цаг захиалах", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
