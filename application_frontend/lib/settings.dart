@@ -11,10 +11,15 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _isDarkMode = false;
-  bool _notifications = true;
-  String _selectedLanguage = 'English';
+  String _selectedLanguage =
+      'English'; // Default value should be in the _languages list.
 
-  final List<String> _languages = ['English', 'Mongolian', 'Spanish'];
+  // Language list updated to match the available options.
+  final List<String> _languages = [
+    'English',
+    'Mongolian'
+  ]; // Corrected language names.
+
   final Color primaryAccent = const Color.fromARGB(255, 218, 175, 249);
 
   @override
@@ -27,20 +32,15 @@ class _SettingsPageState extends State<SettingsPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isDarkMode = prefs.getBool('darkMode') ?? false;
-      _notifications = prefs.getBool('notifications') ?? true;
-      _selectedLanguage = prefs.getString('language') ?? 'English';
+      _selectedLanguage = prefs.getString('language') ??
+          'English'; // Default language should match the list
     });
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('darkMode', _isDarkMode);
-    await prefs.setBool('notifications', _notifications);
     await prefs.setString('language', _selectedLanguage);
-  }
-
-  void _logout() {
-    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -59,17 +59,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildSectionTitle('Өнгө'),
                 _buildCard(child: _buildDarkModeToggle()),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Мэдэгдэл'),
-                _buildCard(child: _buildNotificationToggle()),
-                const SizedBox(height: 20),
-                _buildSectionTitle('хэл'),
-                _buildCard(child: _buildLanguageSelector()),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Дэмжлэг'),
-                _buildCard(child: _buildSupportButton()),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Хаяг'),
-                _buildCard(child: _buildLogoutButton()),
+                _buildSectionTitle('Хэл'),
+                _buildCard(
+                    child: _buildLanguageSelector()), // Corrected section title
               ],
             ),
           ),
@@ -150,7 +142,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('Dark Mode', style: TextStyle(fontSize: 18)),
+        const Text('харанхуй горим', style: TextStyle(fontSize: 18)),
         FlutterSwitch(
           width: 55,
           height: 30,
@@ -169,29 +161,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildNotificationToggle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text('Enable Notifications', style: TextStyle(fontSize: 18)),
-        FlutterSwitch(
-          width: 55,
-          height: 30,
-          toggleSize: 20,
-          value: _notifications,
-          activeColor: primaryAccent,
-          inactiveColor: Colors.grey,
-          onToggle: (val) {
-            setState(() {
-              _notifications = val;
-            });
-            _savePreferences();
-          },
-        ),
-      ],
-    );
-  }
-
   Widget _buildLanguageSelector() {
     return DropdownButtonFormField<String>(
       value: _selectedLanguage,
@@ -202,7 +171,7 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        labelText: 'Select Language',
+        labelText: 'Хэл сонгох',
         labelStyle: TextStyle(
           color: _isDarkMode ? Colors.white70 : Colors.black87,
         ),
@@ -223,50 +192,6 @@ class _SettingsPageState extends State<SettingsPage> {
         });
         _savePreferences();
       },
-    );
-  }
-
-  Widget _buildSupportButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Support contacted!')),
-          );
-        },
-        icon: const Icon(Icons.support_agent),
-        label: const Text('Contact Support'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primaryAccent,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          textStyle: const TextStyle(fontSize: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _logout,
-        icon: const Icon(Icons.logout),
-        label: const Text('Logout'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.redAccent,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          textStyle: const TextStyle(fontSize: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
     );
   }
 }

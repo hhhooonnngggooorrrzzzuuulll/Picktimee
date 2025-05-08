@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 
 class LocationPage extends StatefulWidget {
@@ -18,8 +19,7 @@ class _LocationPageState extends State<LocationPage> {
   }
 
   Future<void> fetchBranches() async {
-    final url =
-        Uri.parse('http://127.0.0.1:8000/branch/'); // For Android Emulator
+    final url = Uri.parse('http://127.0.0.1:8000/branch/'); // Your backend URL
 
     try {
       final response = await http.get(url);
@@ -37,6 +37,15 @@ class _LocationPageState extends State<LocationPage> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> _launchMap(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      throw 'Could not launch $url';
     }
   }
 
@@ -98,14 +107,19 @@ class _LocationPageState extends State<LocationPage> {
                             title: Text(
                               branch["bname"] ?? '',
                               style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             subtitle: Text(branch["blocation"] ?? ''),
                             trailing: IconButton(
-                              icon: Icon(Icons.map, color: Color(0xFF872BC0)),
+                              icon: Icon(Icons.location_on,
+                                  color: Color(0xFF872BC0)),
                               onPressed: () {
-                                print("Navigate to ${branch['bname']}");
-                                // TODO: Add Google Maps navigation logic here
+                                // Open fixed Google Maps location
+                                _launchMap(
+                                  'https://www.google.com/maps/place/UB+Tower/@47.9126751,106.9290568,584m/data=!3m2!1e3!4b1!4m6!3m5!1s0x5d9693e613857445:0x35820bebe4aaa1d3!8m2!3d47.9126751!4d106.9316317!16s%2Fg%2F11jg5zhp81?entry=ttu',
+                                );
                               },
                             ),
                           ),

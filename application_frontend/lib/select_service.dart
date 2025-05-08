@@ -187,6 +187,16 @@ class _SelectServicePageState extends State<SelectServicePage> {
                       ),
                       SizedBox(height: 25),
 
+                      Text(
+                        "Өдөр сонгох",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromARGB(255, 98, 24, 158),
+                        ),
+                      ),
+                      SizedBox(height: 6),
+
                       // Date Selection
                       ListTile(
                         tileColor: Colors.white.withOpacity(0.8),

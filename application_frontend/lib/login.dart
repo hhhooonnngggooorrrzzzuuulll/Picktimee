@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'package:application_frontend/bottom_bar.dart'; // Ensure this is imported
+import 'package:application_frontend/bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'register.dart';
@@ -15,45 +15,32 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true; // <-- Added to control password visibility
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      String url =
-          "http://127.0.0.1:8000/login/"; // Update URL for local or production
+      String url = "http://127.0.0.1:8000/login/";
 
       final response = await http.post(
         Uri.parse(url),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "cemail":
-              _emailController.text, // Ensure the field name matches backend
+          "cemail": _emailController.text,
           "password": _passwordController.text,
         }),
       );
 
       log(response.body.toString());
 
-      // Debug: Print the response body to check the response format
-      // print('Response Body: ${response.body}');
-
       if (response.statusCode == 200) {
         try {
-          // Attempt to decode the response body
           final data = jsonDecode(response.body);
 
-          // Check if expected keys are present
           if (data.containsKey('access') && data.containsKey('refresh')) {
-            String accessToken =
-                data['access']; // The access token returned from the backend
-            String refreshToken =
-                data['refresh']; // The refresh token returned from the backend
-            String user = jsonEncode(
-                data['user']); // The refresh token returned from the backend
+            String accessToken = data['access'];
+            String refreshToken = data['refresh'];
+            String user = jsonEncode(data['user']);
 
-            // print("Access Token: $accessToken");
-            // print("Refresh Token: $refreshToken");
-
-            // Save access and refresh tokens in SharedPreferences for future use
             SharedPreferences prefs = await SharedPreferences.getInstance();
             prefs.setString('access_token', accessToken);
             prefs.setString('refresh_token', refreshToken);
@@ -62,30 +49,21 @@ class _LoginPageState extends State<LoginPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text("Амжилттай нэвтэрлээ!"),
-                backgroundColor: Colors.green, // Custom background color
-                duration: Duration(seconds: 2), // Custom duration
-                action: SnackBarAction(
-                  label: '', // Action label
-                  onPressed: () {
-                    // Action callback, for example, undo login attempt
-                  },
-                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
               ),
             );
 
-            // Navigate to BottomBar after successful login
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => MyHomePage()),
             );
           } else {
-            // If the response doesn't contain 'access' or 'refresh' tokens
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Unexpected response structure")),
             );
           }
         } catch (e) {
-          // If error parsing the response body
           print('Error parsing response: $e');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Error parsing response")),
@@ -95,14 +73,8 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Емайл эсвэл нууц үг буруу байна!"),
-            backgroundColor: Colors.red, // Custom background color
-            duration: Duration(seconds: 2), // Custom duration
-            action: SnackBarAction(
-              label: '', // Action label
-              onPressed: () {
-                // Action callback, for example, undo login attempt
-              },
-            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -138,7 +110,6 @@ class _LoginPageState extends State<LoginPage> {
                   child: IconButton(
                     icon: Icon(Icons.arrow_back, color: Colors.white, size: 28),
                     onPressed: () {
-                      // Navigate to ProfilePage when back button is pressed
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (context) => MyHomePage()),
@@ -188,10 +159,23 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 20),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         labelText: "Нууц үг",
                         prefixIcon: Icon(Icons.lock, color: Color(0xFFB266FF)),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(

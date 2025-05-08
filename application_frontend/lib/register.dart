@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'login.dart';
 
@@ -17,9 +18,12 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
+
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
-      String url = "http://127.0.0.1:8000/register/"; // Update if necessary
+      String url = "http://127.0.0.1:8000/register/"; // Replace with actual API
 
       final response = await http.post(
         Uri.parse(url),
@@ -38,14 +42,8 @@ class _RegisterPageState extends State<RegisterPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Бүртгэл амжилттай үүслээ!"),
-            backgroundColor: Colors.green, // Custom background color
-            duration: Duration(seconds: 2), // Custom duration
-            action: SnackBarAction(
-              label: '', // Action label
-              onPressed: () {
-                // Action callback, for example, undo login attempt
-              },
-            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
         );
         Navigator.pushReplacement(
@@ -55,18 +53,10 @@ class _RegisterPageState extends State<RegisterPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              responseData['Алдаа'] ??
-                  "Бүртгэр үүсэхэд алдаа гарлаа. Дахин оролдоно уу.",
-            ),
-            backgroundColor: Colors.red, // Custom background color
-            duration: Duration(seconds: 2), // Custom duration
-            action: SnackBarAction(
-              label: '', // Action label
-              onPressed: () {
-                // Action callback, for example, undo login attempt
-              },
-            ),
+            content: Text(responseData['Алдаа'] ??
+                "Бүртгэл үүсгэхэд алдаа гарлаа. Дахин оролдоно уу."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -131,8 +121,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
-                        labelText:
-                            "Нэр", // Updated from "Full Name" to "Username"
+                        labelText: "Нэр",
                         prefixIcon:
                             Icon(Icons.person, color: Color(0xFFB266FF)),
                         filled: true,
@@ -164,9 +153,11 @@ class _RegisterPageState extends State<RegisterPage> {
                     SizedBox(height: 20),
                     TextFormField(
                       controller: _phoneController,
+                      keyboardType: TextInputType.phone,
                       decoration: InputDecoration(
                         labelText: "Утасны дугаар",
                         prefixIcon: Icon(Icons.phone, color: Color(0xFFB266FF)),
+                        prefixText: '+976 ',
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -174,16 +165,27 @@ class _RegisterPageState extends State<RegisterPage> {
                           borderSide: BorderSide.none,
                         ),
                       ),
-                      validator: (value) =>
-                          value!.isEmpty ? "Утасны дугаар оруулна уу..." : null,
                     ),
                     SizedBox(height: 20),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: !_passwordVisible,
                       decoration: InputDecoration(
                         labelText: "Нууц үг",
                         prefixIcon: Icon(Icons.lock, color: Color(0xFFB266FF)),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Color(0xFFB266FF),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -198,11 +200,25 @@ class _RegisterPageState extends State<RegisterPage> {
                     SizedBox(height: 20),
                     TextFormField(
                       controller: _confirmPasswordController,
-                      obscureText: true,
+                      obscureText: !_confirmPasswordVisible,
                       decoration: InputDecoration(
                         labelText: "Нууц үг оруулах",
                         prefixIcon:
                             Icon(Icons.lock_outline, color: Color(0xFFB266FF)),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _confirmPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Color(0xFFB266FF),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _confirmPasswordVisible =
+                                  !_confirmPasswordVisible;
+                            });
+                          },
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -237,7 +253,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         context,
                         MaterialPageRoute(builder: (context) => LoginPage()),
                       ),
-                      child: Text("Бүртгэлтэй үүсгэсэн үү? Нэвтрэх",
+                      child: Text("Бүртгэлтэй үү? Нэвтрэх",
                           style: TextStyle(color: Color(0xFFB266FF))),
                     ),
                   ],
